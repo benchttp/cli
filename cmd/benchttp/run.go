@@ -9,9 +9,9 @@ import (
 
 	"github.com/benchttp/engine/runner"
 
-	"github.com/benchttp/cli/internal/cli"
 	"github.com/benchttp/cli/internal/configfile"
 	"github.com/benchttp/cli/internal/configflag"
+	"github.com/benchttp/cli/internal/render"
 	"github.com/benchttp/cli/internal/signals"
 )
 
@@ -56,7 +56,7 @@ func (cmd *cmdRun) execute(args []string) error {
 	go signals.ListenOSInterrupt(cancel)
 
 	// Run the benchmark
-	out, err := runner.
+	report, err := runner.
 		New(onRecordingProgress(cfg.Output.Silent)).
 		Run(ctx, cfg)
 	if err != nil {
@@ -64,11 +64,11 @@ func (cmd *cmdRun) execute(args []string) error {
 	}
 
 	// Write results to stdout
-	if _, err := out.Write(os.Stdout); err != nil {
+	if _, err := render.Report(os.Stdout, report); err != nil {
 		return err
 	}
 
-	if !out.Tests.Pass {
+	if !report.Tests.Pass {
 		return errors.New("test suite failed")
 	}
 
@@ -127,11 +127,11 @@ func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 		return func(runner.RecordingProgress) {}
 	}
 
-	// hack: write a blank line as cli.WriteRecordingProgress always
+	// hack: write a blank line as render.Progress always
 	// erases the previous line
 	fmt.Println()
 
 	return func(progress runner.RecordingProgress) {
-		cli.WriteRecordingProgress(os.Stdout, progress) //nolint: errcheck
+		render.Progress(os.Stdout, progress) //nolint: errcheck
 	}
 }

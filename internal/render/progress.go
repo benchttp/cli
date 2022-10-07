@@ -1,4 +1,4 @@
-package cli
+package render
 
 import (
 	"fmt"
@@ -8,24 +8,24 @@ import (
 
 	"github.com/benchttp/engine/runner"
 
-	"github.com/benchttp/cli/internal/ansi"
+	"github.com/benchttp/cli/internal/render/ansi"
 )
 
-// WriteRecordingProgress renders a fancy representation of p as a string
+// Progress renders a fancy representation of a runner.RecordingProgress
 // and writes the result to w.
-func WriteRecordingProgress(w io.Writer, p runner.RecordingProgress) (int, error) {
-	return fmt.Fprint(w, renderProgress(p))
+func Progress(w io.Writer, p runner.RecordingProgress) (int, error) {
+	return fmt.Fprint(w, progressString(p))
 }
 
-// renderProgress returns a string representation of runner.RecordingProgress
+// progressString returns a string representation of a runner.RecordingProgress
 // for a fancy display in a CLI:
 //
 //	RUNNING ◼︎◼︎◼︎◼︎◼︎◼︎◼︎◼︎◼︎◼︎ 50% | 50/100 requests | 27s timeout
-func renderProgress(s runner.RecordingProgress) string {
+func progressString(p runner.RecordingProgress) string {
 	var (
-		countdown = s.Timeout - s.Elapsed
-		reqmax    = strconv.Itoa(s.MaxCount)
-		pctdone   = s.Percent()
+		countdown = p.Timeout - p.Elapsed
+		reqmax    = strconv.Itoa(p.MaxCount)
+		pctdone   = p.Percent()
 		timeline  = renderTimeline(pctdone)
 	)
 
@@ -39,8 +39,8 @@ func renderProgress(s runner.RecordingProgress) string {
 	return fmt.Sprintf(
 		"%s%s %s %d%% | %d/%s requests | %.0fs timeout             \n",
 		ansi.Erase(1),                               // replace previous line
-		renderStatus(s.Status()), timeline, pctdone, // progress
-		s.DoneCount, reqmax, // requests
+		renderStatus(p.Status()), timeline, pctdone, // progress
+		p.DoneCount, reqmax, // requests
 		countdown.Seconds(), // timeout
 	)
 }
@@ -69,8 +69,8 @@ func renderTimeline(pctdone int) string {
 // depending on whether the run is done or not and the value
 // of its context error.
 func renderStatus(status runner.RecordingStatus) string {
-	color := statusStyle(status)
-	return color(string(status))
+	styled := statusStyle(status)
+	return styled(string(status))
 }
 
 func statusStyle(status runner.RecordingStatus) ansi.StyleFunc {
