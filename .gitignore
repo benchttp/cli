@@ -1,0 +1,11 @@
+# Binary files
+/bin
+
+# IDE files
+/.vscode
+/.idea
+
+# Benchttp configs
+/.benchttp.yml
+/.benchttp.yaml
+/.benchttp.json
