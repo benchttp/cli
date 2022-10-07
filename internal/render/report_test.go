@@ -22,7 +22,7 @@ func TestReport_String(t *testing.T) {
 				TotalDuration: duration,
 			},
 		}
-		checkSummary(t, render.ReportString(rep))
+		checkSummary(t, render.ReportSummaryString(rep))
 	})
 }
 
@@ -60,6 +60,7 @@ Min response time  4000ms
 Max response time  6000ms
 Mean response time 5000ms
 Total duration     15000ms
+
 `
 
 	if summary != expSummary {

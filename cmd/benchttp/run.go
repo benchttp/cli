@@ -11,6 +11,7 @@ import (
 
 	"github.com/benchttp/cli/internal/configfile"
 	"github.com/benchttp/cli/internal/configflag"
+	"github.com/benchttp/cli/internal/output"
 	"github.com/benchttp/cli/internal/render"
 	"github.com/benchttp/cli/internal/signals"
 )
@@ -24,6 +25,8 @@ type cmdRun struct {
 
 	// config is the runner config resulting from parsing CLI flags.
 	config runner.Config
+
+	output output.ConditionalWriter
 }
 
 // init initializes cmdRun with default values.
@@ -34,6 +37,7 @@ func (cmd *cmdRun) init() {
 		"./.benchttp.yaml",
 		"./.benchttp.json",
 	})
+	cmd.output = output.ConditionalWriter{Writer: os.Stdout}
 }
 
 // execute runs the benchttp runner: it parses CLI flags, loads config
@@ -63,8 +67,16 @@ func (cmd *cmdRun) execute(args []string) error {
 		return err
 	}
 
-	// Write results to stdout
-	if _, err := render.Report(os.Stdout, report); err != nil {
+	cmd.output = cmd.output.If(!cfg.Output.Silent)
+
+	// Print summary
+	if _, err := render.ReportSummary(cmd.output, report); err != nil {
+		return err
+	}
+
+	if _, err := render.TestSuite(
+		cmd.output.Or(!report.Tests.Pass), report.Tests,
+	); err != nil {
 		return err
 	}
 
