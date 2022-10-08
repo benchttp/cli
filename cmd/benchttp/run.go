@@ -103,7 +103,7 @@ func (cmd *cmdRun) makeConfig(args []string) (cfg runner.Config, err error) {
 		return
 	}
 
-	mergedConfig := fileConfig.Override(cmd.config, fields...)
+	mergedConfig := cmd.config.WithFields(fields...).Override(fileConfig)
 
 	return mergedConfig, mergedConfig.Validate()
 }
