@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/benchttp/engine/runner"
@@ -25,8 +26,6 @@ type cmdRun struct {
 
 	// config is the runner config resulting from parsing CLI flags.
 	config runner.Config
-
-	output output.ConditionalWriter
 }
 
 // init initializes cmdRun with default values.
@@ -37,7 +36,6 @@ func (cmd *cmdRun) init() {
 		"./.benchttp.yaml",
 		"./.benchttp.json",
 	})
-	cmd.output = output.ConditionalWriter{Writer: os.Stdout}
 }
 
 // execute runs the benchttp runner: it parses CLI flags, loads config
@@ -46,45 +44,18 @@ func (cmd *cmdRun) init() {
 func (cmd *cmdRun) execute(args []string) error {
 	cmd.init()
 
-	// Set CLI config from flags and retrieve fields that were set
-	fieldsSet := cmd.parseArgs(args)
-
-	// Generate merged config (defaults < config file < CLI flags)
-	cfg, err := cmd.makeConfig(fieldsSet)
+	// Generate merged config (default < config file < CLI flags)
+	cfg, err := cmd.makeConfig(args)
 	if err != nil {
 		return err
 	}
 
-	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
-	ctx, cancel := context.WithCancel(context.Background())
-	go signals.ListenOSInterrupt(cancel)
-
-	// Run the benchmark
-	report, err := runner.
-		New(onRecordingProgress(cfg.Output.Silent)).
-		Run(ctx, cfg)
+	report, err := runBenchmark(cfg)
 	if err != nil {
 		return err
 	}
 
-	cmd.output = cmd.output.If(!cfg.Output.Silent)
-
-	// Print summary
-	if _, err := render.ReportSummary(cmd.output, report); err != nil {
-		return err
-	}
-
-	if _, err := render.TestSuite(
-		cmd.output.Or(!report.Tests.Pass), report.Tests,
-	); err != nil {
-		return err
-	}
-
-	if !report.Tests.Pass {
-		return errors.New("test suite failed")
-	}
-
-	return nil
+	return renderReport(os.Stdout, report, cfg.Output.Silent)
 }
 
 // parseArgs parses input args as config fields and returns
@@ -115,7 +86,10 @@ func (cmd *cmdRun) parseArgs(args []string) []string {
 // makeConfig returns a runner.ConfigGlobal initialized with config file
 // options if found, overridden with CLI options listed in fields
 // slice param.
-func (cmd *cmdRun) makeConfig(fields []string) (cfg runner.Config, err error) {
+func (cmd *cmdRun) makeConfig(args []string) (cfg runner.Config, err error) {
+	// Set CLI config from flags and retrieve fields that were set
+	fields := cmd.parseArgs(args)
+
 	// configFile not set and default ones not found:
 	// skip the merge and return the cli config
 	if cmd.configFile == "" {
@@ -146,4 +120,40 @@ func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 	return func(progress runner.RecordingProgress) {
 		render.Progress(os.Stdout, progress) //nolint: errcheck
 	}
+}
+
+func runBenchmark(cfg runner.Config) (*runner.Report, error) {
+	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
+	ctx, cancel := context.WithCancel(context.Background())
+	go signals.ListenOSInterrupt(cancel)
+
+	// Run the benchmark
+	report, err := runner.
+		New(onRecordingProgress(cfg.Output.Silent)).
+		Run(ctx, cfg)
+	if err != nil {
+		return report, err
+	}
+
+	return report, nil
+}
+
+func renderReport(w io.Writer, report *runner.Report, silent bool) error {
+	cw := output.ConditionalWriter{Writer: w}.If(!silent)
+
+	if _, err := render.ReportSummary(cw, report); err != nil {
+		return err
+	}
+
+	if _, err := render.TestSuite(
+		cw.Or(!report.Tests.Pass), report.Tests,
+	); err != nil {
+		return err
+	}
+
+	if !report.Tests.Pass {
+		return errors.New("test suite failed")
+	}
+
+	return nil
 }
