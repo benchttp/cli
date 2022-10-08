@@ -17,9 +17,6 @@ runner:
   requestTimeout: 2s
   globalTimeout: 60s
 
-output:
-  silent: true
-
 tests:
   - name: minimum response time
     field: ResponseTimes.Min

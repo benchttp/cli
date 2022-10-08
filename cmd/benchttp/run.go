@@ -24,6 +24,9 @@ type cmdRun struct {
 	// configFile is the parsed value for flag -configFile
 	configFile string
 
+	// silent is the parsed value for flag -silent
+	silent bool
+
 	// config is the runner config resulting from parsing CLI flags.
 	config runner.Config
 }
@@ -50,12 +53,12 @@ func (cmd *cmdRun) execute(args []string) error {
 		return err
 	}
 
-	report, err := runBenchmark(cfg)
+	report, err := runBenchmark(cfg, cmd.silent)
 	if err != nil {
 		return err
 	}
 
-	return renderReport(os.Stdout, report, cfg.Output.Silent)
+	return renderReport(os.Stdout, report, cmd.silent)
 }
 
 // parseArgs parses input args as config fields and returns
@@ -72,6 +75,13 @@ func (cmd *cmdRun) parseArgs(args []string) []string {
 		"configFile",
 		cmd.configFile,
 		"Config file path",
+	)
+
+	// silent mode
+	cmd.flagset.BoolVar(&cmd.silent,
+		"silent",
+		false,
+		"Silent mode",
 	)
 
 	// attach config options flags to the flagset
@@ -122,14 +132,14 @@ func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 	}
 }
 
-func runBenchmark(cfg runner.Config) (*runner.Report, error) {
+func runBenchmark(cfg runner.Config, silent bool) (*runner.Report, error) {
 	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
 	ctx, cancel := context.WithCancel(context.Background())
 	go signals.ListenOSInterrupt(cancel)
 
 	// Run the benchmark
 	report, err := runner.
-		New(onRecordingProgress(cfg.Output.Silent)).
+		New(onRecordingProgress(silent)).
 		Run(ctx, cfg)
 	if err != nil {
 		return report, err

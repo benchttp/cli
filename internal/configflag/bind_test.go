@@ -40,7 +40,6 @@ func TestBind(t *testing.T) {
 			"-interval", "3s",
 			"-requestTimeout", "4s",
 			"-globalTimeout", "5s",
-			"-silent",
 		}
 
 		cfg := runner.Config{}
@@ -61,9 +60,6 @@ func TestBind(t *testing.T) {
 				Interval:       3 * time.Second,
 				RequestTimeout: 4 * time.Second,
 				GlobalTimeout:  5 * time.Second,
-			},
-			Output: runner.OutputConfig{
-				Silent: true,
 			},
 		}
 

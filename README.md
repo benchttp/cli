@@ -91,8 +91,9 @@ A full config file example is available [here](./examples/config/full.yml).
 
 Note: the expected format for durations is `<int><unit>`, with `unit` being any of `ns`, `µs`, `ms`, `s`, `m`, `h`.
 
-#### Output options
+#### CLI-specific options
 
-| CLI flag  | File option     | Description               | Usage example               |
-| --------- | --------------- | ------------------------- | --------------------------- |
-| `-silent` | `output.silent` | Remove convenience prints | `-silent` / `-silent=false` |
+| CLI flag      | Description                  | Usage example                      |
+| ------------- | ---------------------------- | ---------------------------------- |
+| `-silent`     | Remove convenience prints    | `-silent` / `-silent=false`        |
+| `-configFile` | Path to benchttp config file | `-configFile=path/to/benchttp.yml` |

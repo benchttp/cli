@@ -108,7 +108,7 @@ func TestParse(t *testing.T) {
 			restoreGotCfg := setTempValue(&gotURL.RawQuery, "replaced by test")
 			restoreExpCfg := setTempValue(&expURL.RawQuery, "replaced by test")
 
-			if !reflect.DeepEqual(gotCfg, expCfg) {
+			if !gotCfg.Equal(expCfg) {
 				t.Errorf("unexpected parsed config for %s file:\nexp %v\ngot %v", ext, expCfg, gotCfg)
 			}
 
@@ -176,7 +176,7 @@ func TestParse(t *testing.T) {
 				}
 
 				if gotURL := cfg.Request.URL.String(); gotURL != expURL {
-					t.Errorf("method: exp %s, got %s", expURL, gotURL)
+					t.Errorf("url: exp %s, got %s", expURL, gotURL)
 				}
 			})
 		}
@@ -205,9 +205,6 @@ func newExpConfig() runner.Config {
 			Interval:       50 * time.Millisecond,
 			RequestTimeout: 2 * time.Second,
 			GlobalTimeout:  60 * time.Second,
-		},
-		Output: runner.OutputConfig{
-			Silent: true,
 		},
 		Tests: []runner.TestCase{
 			{

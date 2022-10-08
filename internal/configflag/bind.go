@@ -73,11 +73,4 @@ func Bind(flagset *flag.FlagSet, dst *runner.Config) {
 		dst.Runner.GlobalTimeout,
 		runner.ConfigFieldsUsage[runner.ConfigFieldGlobalTimeout],
 	)
-
-	// silent mode
-	flagset.BoolVar(&dst.Output.Silent,
-		runner.ConfigFieldSilent,
-		dst.Output.Silent,
-		runner.ConfigFieldsUsage[runner.ConfigFieldSilent],
-	)
 }
