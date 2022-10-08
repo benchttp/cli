@@ -21,7 +21,7 @@ func main() {
 }
 
 func run() error {
-	commandName, nextArgs, err := shiftArgs(os.Args[1:])
+	commandName, options, err := shiftArgs(os.Args[1:])
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func run() error {
 		return err
 	}
 
-	return cmd.execute(nextArgs)
+	return cmd.execute(options)
 }
 
 func shiftArgs(args []string) (commandName string, nextArgs []string, err error) {

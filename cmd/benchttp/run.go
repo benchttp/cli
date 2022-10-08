@@ -149,14 +149,15 @@ func runBenchmark(cfg runner.Config, silent bool) (*runner.Report, error) {
 }
 
 func renderReport(w io.Writer, report *runner.Report, silent bool) error {
-	cw := output.ConditionalWriter{Writer: w}.If(!silent)
+	writeIfNotSilent := output.ConditionalWriter{Writer: w}.If(!silent)
 
-	if _, err := render.ReportSummary(cw, report); err != nil {
+	if _, err := render.ReportSummary(writeIfNotSilent, report); err != nil {
 		return err
 	}
 
 	if _, err := render.TestSuite(
-		cw.Or(!report.Tests.Pass), report.Tests,
+		writeIfNotSilent.ElseIf(!report.Tests.Pass),
+		report.Tests,
 	); err != nil {
 		return err
 	}

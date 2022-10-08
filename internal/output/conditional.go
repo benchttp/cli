@@ -4,12 +4,14 @@ import (
 	"io"
 )
 
+// ConditionalWriter is an io.Writer that wraps an input writer
+// and exposes methods to condition its action.
 type ConditionalWriter struct {
 	Writer io.Writer
 	ok     bool
 }
 
-// Write writes b only if MuteableWriter.Mute is false,
+// Write writes b only if ConditionalWriter.Mute is false,
 // otherwise it is no-op.
 func (w ConditionalWriter) Write(b []byte) (int, error) {
 	if !w.ok {
@@ -18,16 +20,19 @@ func (w ConditionalWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func (w ConditionalWriter) If(ok bool) ConditionalWriter {
+// If sets the write condition to v.
+func (w ConditionalWriter) If(v bool) ConditionalWriter {
 	return ConditionalWriter{
 		Writer: w.Writer,
-		ok:     ok,
+		ok:     v,
 	}
 }
 
-func (w ConditionalWriter) Or(ok bool) ConditionalWriter {
+// ElseIf either keeps the previous write condition if it is true,
+// else it sets it to v.
+func (w ConditionalWriter) ElseIf(v bool) ConditionalWriter {
 	return ConditionalWriter{
 		Writer: w.Writer,
-		ok:     w.ok || ok,
+		ok:     w.ok || v,
 	}
 }
