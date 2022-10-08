@@ -1,3 +1,5 @@
+github.com/benchttp/engine v0.0.0-20221008174504-d1162e9ac007 h1:h6ON0tn3i/83eUMoXq0FHxBMLYIA/OIli3m9KYkcxPI=
+github.com/benchttp/engine v0.0.0-20221008174504-d1162e9ac007/go.mod h1:FRfUnUjoL1s0aHVGlrxB3pdPAEDLNCnWh6cVOur24hM=
 github.com/drykit-go/cond v0.1.0 h1:y7MNxREQLT83vGfcfSKjyFPLC/ZDjYBNp6KuaVVjOg4=
 github.com/drykit-go/cond v0.1.0/go.mod h1:7MXBFjjaB5ZCEB8Q4w2euNOaWuTqf7NjOFZAyV1Jpfg=
 github.com/drykit-go/strcase v0.2.0/go.mod h1:cWK0/az2f09UPIbJ42Sb8Iqdv01uENrFX+XXKGjPo+8=
