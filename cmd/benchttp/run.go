@@ -64,9 +64,8 @@ func (cmd *cmdRun) execute(args []string) error {
 // parseArgs parses input args as config fields and returns
 // a slice of fields that were set by the user.
 func (cmd *cmdRun) parseArgs(args []string) []string {
-	// first arg is subcommand "run"
 	// skip parsing if no flags are provided
-	if len(args) <= 1 {
+	if len(args) == 0 {
 		return []string{}
 	}
 
@@ -88,7 +87,7 @@ func (cmd *cmdRun) parseArgs(args []string) []string {
 	// and bind their value to the config struct
 	configflag.Bind(cmd.flagset, &cmd.config)
 
-	cmd.flagset.Parse(args[1:]) //nolint:errcheck // never occurs due to flag.ExitOnError
+	cmd.flagset.Parse(args) //nolint:errcheck // never occurs due to flag.ExitOnError
 
 	return configflag.Which(cmd.flagset)
 }
