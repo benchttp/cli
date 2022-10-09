@@ -42,8 +42,6 @@ benchttp run [options]
 
 In this section we dive into the many configuration options provided by the runner.
 
-First, a good way to get started with is via our [configuration generator](https://www.benchttp.app/setup).
-
 By default, the runner uses a default configuration that is valid for use without further tuning, except for `url` that must always be set.
 
 ### Configuration Flow
