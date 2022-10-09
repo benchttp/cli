@@ -17,8 +17,8 @@
 ## About
 
 `benchttp/cli` is a command-line interface that runs benchmarks on HTTP endpoints.
-Highly configurable, it can be used as a CI step as well as
-a testing tool at development time.
+Highly configurable, it can be used as a development tool at design time
+as well as a CI step thanks to the testing suite.
 
 ## Installation
 
@@ -67,7 +67,7 @@ To determine the final configuration of a benchmark, the runner follows that flo
 With rare exceptions, any option can be set either via CLI flags or config file,
 and option names always match.
 
-A full config file example is available [here](./examples/config/full.yml).
+📄 A full config file example is available [here](./examples/config/full.yml).
 
 #### HTTP request options
 
@@ -97,3 +97,21 @@ Note: the expected format for durations is `<int><unit>`, with `unit` being any 
 | ------------- | ---------------------------- | ---------------------------------- |
 | `-silent`     | Remove convenience prints    | `-silent` / `-silent=false`        |
 | `-configFile` | Path to benchttp config file | `-configFile=path/to/benchttp.yml` |
+
+#### Testing suite
+
+One of the nicest features is the ability to run a test suite
+on an endpoint's performances from the CLI using the regular command.
+
+Once the test suite done, it exits the process with code `0` if successful
+or `1` if any test failed, which makes `benchttp` usable in a CI context,
+making sure your changes do not introduce perfomance regressions for instance:
+
+![Benchttp test suite](docs/test-suite.png)
+
+For that matter, the test suite must be declared in a benchttp configuration
+file (there is currently no way to set these via cli options).
+
+📄 Please refer to
+[our Wiki](https://github.com/benchttp/engine/wiki/IO-Structures#yaml)
+for a fully detailed configuration including a test suite.
