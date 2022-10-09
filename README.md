@@ -44,9 +44,11 @@ In this section we dive into the many configuration options provided by the runn
 
 By default, the runner uses a default configuration that is valid for use without further tuning, except for `url` that must always be set.
 
-### Configuration Flow
+You can override the default configuration by providing a configuration file (YAML or JSON) with the `--configFile` flag, or by passing flags to the `run` command (see below for the list of flags), or a mix of both.
 
-To determine the final configuration of a benchmark, the runner follows that flow:
+### Configuration flow
+
+The runner uses a default configuration that can be overridden by a configuration file and/or flags. To determine the final configuration of a benchmark and which options take predecence over the others, the runner follows this flow:
 
 1. It starts with a [default configuration](./examples/config/default.yml)
 1. Then it tries to find a config file and overrides the defaults with the values set in it
@@ -67,7 +69,7 @@ To determine the final configuration of a benchmark, the runner follows that flo
 With rare exceptions, any option can be set either via CLI flags or config file,
 and option names always match.
 
-📄 A full config file example is available [here](./examples/config/full.yml).
+📄 A full config file example is available [here](./examples/config/full.yml) (minus the testing suite, see below).
 
 #### HTTP request options
 
@@ -100,18 +102,12 @@ Note: the expected format for durations is `<int><unit>`, with `unit` being any 
 
 #### Testing suite
 
-One of the nicest features is the ability to run a test suite
-on an endpoint's performances from the CLI using the regular command.
+One of the nicest features is the ability to run a test suite on an endpoint's performances from the CLI using the regular command.
 
-Once the test suite done, it exits the process with code `0` if successful
-or `1` if any test failed, which makes `benchttp` usable in a CI context,
-making sure your changes do not introduce perfomance regressions for instance:
+Once the test suite done, it exits the process with code `0` if successful or `1` if any test failed, which makes `benchttp` usable in a CI context, making sure your changes do not introduce perfomance regressions for instance:
 
 ![Benchttp test suite](docs/test-suite.png)
 
-For that matter, the test suite must be declared in a benchttp configuration
-file (there is currently no way to set these via cli options).
+For that matter, the test suite must be declared in a benchttp configuration file (there is currently no way to set these via cli options).
 
-📄 Please refer to
-[our Wiki](https://github.com/benchttp/engine/wiki/IO-Structures#yaml)
-for a fully detailed configuration including a test suite.
+📄 Please refer to [our Wiki](https://github.com/benchttp/engine/wiki/IO-Structures#yaml) for a fully detailed configuration including a test suite.
