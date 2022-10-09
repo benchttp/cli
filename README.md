@@ -20,6 +20,8 @@
 Highly configurable, it can be used as a development tool at design time
 as well as a CI step thanks to the testing suite.
 
+![Benchttp demo](docs/demo.gif)
+
 ## Installation
 
 1. Visit https://github.com/benchttp/cli/releases and download the asset
