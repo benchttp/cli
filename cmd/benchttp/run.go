@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/benchttp/engine/configparse"
 	"github.com/benchttp/engine/runner"
 
 	"github.com/benchttp/cli/internal/configfile"
@@ -27,33 +28,24 @@ type cmdRun struct {
 	// silent is the parsed value for flag -silent
 	silent bool
 
-	// config is the runner config resulting from parsing CLI flags.
-	config runner.Config
-}
-
-// init initializes cmdRun with default values.
-func (cmd *cmdRun) init() {
-	cmd.config = runner.DefaultConfig()
-	cmd.configFile = configfile.Find([]string{
-		"./.benchttp.yml",
-		"./.benchttp.yaml",
-		"./.benchttp.json",
-	})
+	// configRepr is the runner config resulting from config flag values
+	configRepr configparse.Representation
 }
 
 // execute runs the benchttp runner: it parses CLI flags, loads config
 // from config file and parsed flags, then runs the benchmark and outputs
 // it according to the config.
 func (cmd *cmdRun) execute(args []string) error {
-	cmd.init()
+	if err := cmd.parseArgs(args); err != nil {
+		return err
+	}
 
-	// Generate merged config (default < config file < CLI flags)
-	cfg, err := cmd.makeConfig(args)
+	config, err := cmd.buildConfig()
 	if err != nil {
 		return err
 	}
 
-	report, err := runBenchmark(cfg, cmd.silent)
+	report, err := runBenchmark(config, cmd.silent)
 	if err != nil {
 		return err
 	}
@@ -61,60 +53,31 @@ func (cmd *cmdRun) execute(args []string) error {
 	return renderReport(os.Stdout, report, cmd.silent)
 }
 
-// parseArgs parses input args as config fields and returns
-// a slice of fields that were set by the user.
-func (cmd *cmdRun) parseArgs(args []string) []string {
-	// skip parsing if no flags are provided
-	if len(args) == 0 {
-		return []string{}
-	}
-
-	// config file path
-	cmd.flagset.StringVar(&cmd.configFile,
-		"configFile",
-		cmd.configFile,
-		"Config file path",
-	)
-
-	// silent mode
-	cmd.flagset.BoolVar(&cmd.silent,
-		"silent",
-		false,
-		"Silent mode",
-	)
-
-	// attach config options flags to the flagset
-	// and bind their value to the config struct
-	configflag.Bind(cmd.flagset, &cmd.config)
-
-	cmd.flagset.Parse(args) //nolint:errcheck // never occurs due to flag.ExitOnError
-
-	return configflag.Which(cmd.flagset)
+func (cmd *cmdRun) parseArgs(args []string) error {
+	cmd.flagset.StringVar(&cmd.configFile, "configFile", configfile.Find(), "Config file path")
+	cmd.flagset.BoolVar(&cmd.silent, "silent", false, "Silent mode")
+	configflag.Bind(cmd.flagset, &cmd.configRepr)
+	return cmd.flagset.Parse(args)
 }
 
-// makeConfig returns a runner.ConfigGlobal initialized with config file
-// options if found, overridden with CLI options listed in fields
-// slice param.
-func (cmd *cmdRun) makeConfig(args []string) (cfg runner.Config, err error) {
-	// Set CLI config from flags and retrieve fields that were set
-	fields := cmd.parseArgs(args)
+func (cmd *cmdRun) buildConfig() (runner.Config, error) {
+	// start with default config as base
+	config := runner.DefaultConfig()
 
-	// configFile not set and default ones not found:
-	// skip the merge and return the cli config
-	if cmd.configFile == "" {
-		return cmd.config, cmd.config.Validate()
-	}
-
-	fileConfig, err := configfile.Parse(cmd.configFile)
+	// override with config file values
+	err := configfile.Parse(cmd.configFile, &config)
 	if err != nil && !errors.Is(err, configfile.ErrFileNotFound) {
 		// config file is not mandatory: discard ErrFileNotFound.
 		// other errors are critical
-		return
+		return config, err
 	}
 
-	mergedConfig := cmd.config.WithFields(fields...).Override(fileConfig)
+	// override with CLI flags values
+	if err := cmd.configRepr.Unmarshal(&config); err != nil {
+		return config, err
+	}
 
-	return mergedConfig, mergedConfig.Validate()
+	return config, nil
 }
 
 func onRecordingProgress(silent bool) func(runner.RecordingProgress) {

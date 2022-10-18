@@ -7,33 +7,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benchttp/engine/configparse"
 	"github.com/benchttp/engine/runner"
 
 	"github.com/benchttp/cli/internal/configflag"
 )
 
 func TestBind(t *testing.T) {
-	t.Run("default to base config", func(t *testing.T) {
-		flagset := flag.NewFlagSet("run", flag.ExitOnError)
+	t.Run("default to zero representation", func(t *testing.T) {
+		flagset := flag.NewFlagSet("", flag.ExitOnError)
 		args := []string{} // no args
 
-		cfg := runner.DefaultConfig()
-		configflag.Bind(flagset, &cfg)
+		repr := configparse.Representation{}
+		configflag.Bind(flagset, &repr)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
 		}
 
-		if exp := runner.DefaultConfig(); !reflect.DeepEqual(cfg, exp) {
-			t.Errorf("\nexp %#v\ngot %#v", exp, cfg)
+		exp := configparse.Representation{}
+		if got := repr; !reflect.DeepEqual(got, exp) {
+			t.Errorf("\nexp %#v\ngot %#v", exp, got)
 		}
 	})
 
 	t.Run("set config with flags values", func(t *testing.T) {
-		flagset := flag.NewFlagSet("run", flag.ExitOnError)
+		flagset := flag.NewFlagSet("", flag.ExitOnError)
 		args := []string{
 			"-method", "POST",
 			"-url", "https://benchttp.app?cool=yes",
-			"-header", "Content-Type:application/json",
+			"-header", "API_KEY:abc",
+			"-header", "Accept:text/html",
+			"-header", "Accept:application/json",
 			"-body", "raw:hello",
 			"-requests", "1",
 			"-concurrency", "2",
@@ -42,8 +46,8 @@ func TestBind(t *testing.T) {
 			"-globalTimeout", "5s",
 		}
 
-		cfg := runner.Config{}
-		configflag.Bind(flagset, &cfg)
+		repr := configparse.Representation{}
+		configflag.Bind(flagset, &repr)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
 		}
@@ -51,8 +55,11 @@ func TestBind(t *testing.T) {
 		exp := runner.Config{
 			Request: runner.RequestConfig{
 				Method: "POST",
-				Header: http.Header{"Content-Type": {"application/json"}},
-				Body:   runner.RequestBody{Type: "raw", Content: []byte("hello")},
+				Header: http.Header{
+					"API_KEY": {"abc"},
+					"Accept":  {"text/html", "application/json"},
+				},
+				Body: runner.RequestBody{Type: "raw", Content: []byte("hello")},
 			}.WithURL("https://benchttp.app?cool=yes"),
 			Runner: runner.RecorderConfig{
 				Requests:       1,
@@ -63,8 +70,12 @@ func TestBind(t *testing.T) {
 			},
 		}
 
-		if !reflect.DeepEqual(cfg, exp) {
-			t.Errorf("\nexp %#v\ngot %#v", exp, cfg)
+		var got runner.Config
+		if err := repr.Unmarshal(&got); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, exp) {
+			t.Errorf("\nexp %#v\ngot %#v", exp, got)
 		}
 	})
 }

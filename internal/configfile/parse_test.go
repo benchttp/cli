@@ -47,12 +47,12 @@ func TestParse(t *testing.T) {
 			{
 				label:  "yaml invalid fields",
 				path:   configPath("invalid/badfields.yml"),
-				expErr: configfile.ErrParse,
+				expErr: configfile.ErrFileParse,
 			},
 			{
 				label:  "json invalid fields",
 				path:   configPath("invalid/badfields.json"),
-				expErr: configfile.ErrParse,
+				expErr: configfile.ErrFileParse,
 			},
 			{
 				label:  "self reference",
@@ -68,7 +68,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				gotCfg, gotErr := configfile.Parse(tc.path)
+				cfg := runner.Config{}
+				gotErr := configfile.Parse(tc.path, &cfg)
 
 				if gotErr == nil {
 					t.Fatal("exp non-nil error, got nil")
@@ -78,8 +79,8 @@ func TestParse(t *testing.T) {
 					t.Errorf("\nexp %v\ngot %v", tc.expErr, gotErr)
 				}
 
-				if !reflect.DeepEqual(gotCfg, runner.Config{}) {
-					t.Errorf("\nexp empty config\ngot %v", gotCfg)
+				if !reflect.DeepEqual(cfg, runner.Config{}) {
+					t.Errorf("\nexp empty config\ngot %v", cfg)
 				}
 			})
 		}
@@ -90,8 +91,8 @@ func TestParse(t *testing.T) {
 			expCfg := newExpConfig()
 			fname := configPath("valid/benchttp" + ext)
 
-			gotCfg, err := configfile.Parse(fname)
-			if err != nil {
+			gotCfg := runner.Config{}
+			if err := configfile.Parse(fname, &gotCfg); err != nil {
 				// critical error, stop the test
 				t.Fatal(err)
 			}
@@ -108,7 +109,7 @@ func TestParse(t *testing.T) {
 			restoreGotCfg := setTempValue(&gotURL.RawQuery, "replaced by test")
 			restoreExpCfg := setTempValue(&expURL.RawQuery, "replaced by test")
 
-			if !gotCfg.Equal(expCfg) {
+			if !reflect.DeepEqual(gotCfg, expCfg) {
 				t.Errorf("unexpected parsed config for %s file:\nexp %v\ngot %v", ext, expCfg, gotCfg)
 			}
 
@@ -117,25 +118,36 @@ func TestParse(t *testing.T) {
 		}
 	})
 
-	t.Run("override default values", func(t *testing.T) {
-		const (
-			expRequests      = 0 // default is -1
-			expGlobalTimeout = 42 * time.Millisecond
-		)
+	t.Run("override input config", func(t *testing.T) {
+		cfg := runner.Config{}
+		cfg.Request.Method = "POST"
+		cfg.Runner.GlobalTimeout = 10 * time.Millisecond
 
 		fname := configPath("valid/benchttp-zeros.yml")
 
-		cfg, err := configfile.Parse(fname)
-		if err != nil {
+		if err := configfile.Parse(fname, &cfg); err != nil {
 			t.Fatal(err)
 		}
 
-		if gotRequests := cfg.Runner.Requests; gotRequests != expRequests {
-			t.Errorf("did not override Requests: exp %d, got %d", expRequests, gotRequests)
+		const (
+			expMethod        = "POST"                // from input config
+			expGlobalTimeout = 42 * time.Millisecond // from read file
+		)
+
+		if gotMethod := cfg.Request.Method; gotMethod != expMethod {
+			t.Errorf(
+				"did not keep input values that are not set: "+
+					"exp Request.Method == %s, got %s",
+				expMethod, gotMethod,
+			)
 		}
 
 		if gotGlobalTimeout := cfg.Runner.GlobalTimeout; gotGlobalTimeout != expGlobalTimeout {
-			t.Errorf("did not override GlobalTimeout: exp %d, got %d", expGlobalTimeout, gotGlobalTimeout)
+			t.Errorf(
+				"did not override input values that are set: "+
+					"exp Runner.GlobalTimeout == %v, got %v",
+				expGlobalTimeout, gotGlobalTimeout,
+			)
 		}
 
 		t.Log(cfg)
@@ -161,8 +173,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				cfg, err := configfile.Parse(tc.cfpath)
-				if err != nil {
+				var cfg runner.Config
+				if err := configfile.Parse(tc.cfpath, &cfg); err != nil {
 					t.Fatal(err)
 				}
 

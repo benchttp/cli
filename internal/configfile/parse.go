@@ -11,15 +11,16 @@ import (
 	"github.com/benchttp/cli/internal/errorutil"
 )
 
-// Parse parses a benchttp runner config file into a runner.ConfigGlobal
-// and returns it or the first non-nil error occurring in the process,
-// which can be any of the values declared in the package.
-func Parse(filename string) (cfg runner.Config, err error) {
-	uconfs, err := parseFileRecursive(filename, []configparse.Representation{}, set{})
+// Parse parses given filename as a benchttp runner config file
+// into a runner.Config and stores the retrieved values into *dst.
+// It returns the first error occurring in the process, which can be
+// any of the values declared in the package.
+func Parse(filename string, cfg *runner.Config) (err error) {
+	reprs, err := parseFileRecursive(filename, []configparse.Representation{}, set{})
 	if err != nil {
 		return
 	}
-	return parseAndMergeConfigs(uconfs)
+	return parseAndMergeConfigs(reprs, cfg)
 }
 
 // set is a collection of unique string values.
@@ -85,7 +86,7 @@ func parseFile(filename string) (repr configparse.Representation, err error) {
 	}
 
 	if err = parser.Parse(b, &repr); err != nil {
-		return repr, errorutil.WithDetails(ErrParse, filename, err)
+		return repr, errorutil.WithDetails(ErrFileParse, filename, err)
 	}
 
 	return repr, nil
@@ -95,25 +96,20 @@ func parseFile(filename string) (repr configparse.Representation, err error) {
 // as runner.ConfigGlobal and merging them into a single one.
 // It returns the merged result or the first non-nil error occurring in the
 // process.
-func parseAndMergeConfigs(reprs []configparse.Representation) (cfg runner.Config, err error) {
+func parseAndMergeConfigs(reprs []configparse.Representation, dst *runner.Config) error {
 	if len(reprs) == 0 { // supposedly catched upstream, should not occur
-		return cfg, errors.New(
+		return errors.New(
 			"an unacceptable error occurred parsing the config file, " +
 				"please visit https://github.com/benchttp/runner/issues/new " +
 				"and insult us properly",
 		)
 	}
 
-	cfg = runner.DefaultConfig()
-
 	for i := len(reprs) - 1; i >= 0; i-- {
-		repr := reprs[i]
-		currentConfig, err := configparse.ParseRepresentation(repr)
-		if err != nil {
-			return cfg, errorutil.WithDetails(ErrParse, err)
+		if err := reprs[i].Unmarshal(dst); err != nil {
+			return errorutil.WithDetails(ErrFileParse, err)
 		}
-		cfg = currentConfig.Override(cfg)
 	}
 
-	return cfg, nil
+	return nil
 }

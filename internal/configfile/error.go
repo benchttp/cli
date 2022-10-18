@@ -16,10 +16,10 @@ var (
 	// ErrFileExt signals an unsupported extension for the config file.
 	ErrFileExt = errors.New("invalid extension")
 
-	// ErrParse signals an error parsing a retrieved config file.
+	// ErrFileParse signals an error parsing a retrieved config file.
 	// It is returned if it contains an unexpected field or an unexpected
 	// value for a field.
-	ErrParse = errors.New("parsing error: invalid config file")
+	ErrFileParse = errors.New("parsing error: invalid config file")
 
 	// ErrCircularExtends signals a circular reference in the config file.
 	ErrCircularExtends = errors.New("circular reference detected")
