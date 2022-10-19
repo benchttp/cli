@@ -2,13 +2,10 @@ package configflag_test
 
 import (
 	"flag"
-	"net/http"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/benchttp/engine/configparse"
-	"github.com/benchttp/engine/runner"
 
 	"github.com/benchttp/cli/internal/configflag"
 )
@@ -52,30 +49,22 @@ func TestBind(t *testing.T) {
 			t.Fatal(err) // critical error, stop the test
 		}
 
-		exp := runner.Config{
-			Request: runner.RequestConfig{
-				Method: "POST",
-				Header: http.Header{
-					"API_KEY": {"abc"},
-					"Accept":  {"text/html", "application/json"},
-				},
-				Body: runner.RequestBody{Type: "raw", Content: []byte("hello")},
-			}.WithURL("https://benchttp.app?cool=yes"),
-			Runner: runner.RecorderConfig{
-				Requests:       1,
-				Concurrency:    2,
-				Interval:       3 * time.Second,
-				RequestTimeout: 4 * time.Second,
-				GlobalTimeout:  5 * time.Second,
-			},
-		}
+		switch {
+		case *repr.Request.Method != "POST",
+			*repr.Request.URL != "https://benchttp.app?cool=yes",
+			repr.Request.Header["API_KEY"][0] != "abc",
+			repr.Request.Header["Accept"][0] != "text/html",
+			repr.Request.Header["Accept"][1] != "application/json",
+			repr.Request.Body.Type != "raw",
+			repr.Request.Body.Content != "hello",
 
-		var got runner.Config
-		if err := repr.Unmarshal(&got); err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(got, exp) {
-			t.Errorf("\nexp %#v\ngot %#v", exp, got)
+			*repr.Runner.Requests != 1,
+			*repr.Runner.Concurrency != 2,
+			*repr.Runner.Interval != "3s",
+			*repr.Runner.RequestTimeout != "4s",
+			*repr.Runner.GlobalTimeout != "5s":
+
+			t.Error("unexpected parsed flags")
 		}
 	})
 }

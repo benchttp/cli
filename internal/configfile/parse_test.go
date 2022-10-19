@@ -3,6 +3,7 @@ package configfile_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -13,11 +14,12 @@ import (
 	"github.com/benchttp/engine/runner"
 
 	"github.com/benchttp/cli/internal/configfile"
+	"github.com/benchttp/cli/internal/testutil"
 )
 
 const (
-	testdataConfigPath = "./testdata"
-	testURL            = "http://localhost:9999?fib=30&delay=200ms" // value from testdata files
+	validConfigPath = "./testdata"
+	validURL        = "http://localhost:9999?fib=30&delay=200ms" // value from testdata files
 )
 
 var supportedExt = []string{
@@ -97,30 +99,20 @@ func TestParse(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			expURL, gotURL := expCfg.Request.URL, gotCfg.Request.URL
-
-			// compare *url.URLs separately, as they contain unpredictable values
-			// they need special checks
-			if !sameURL(gotURL, expURL) {
-				t.Errorf("unexpected parsed URL:\nexp %v, got %v", expURL, gotURL)
+			if sameConfig(gotCfg, runner.Config{}) {
+				t.Error("received an empty configuration")
 			}
 
-			// replace unpredictable values (undetermined query params order)
-			restoreGotCfg := setTempValue(&gotURL.RawQuery, "replaced by test")
-			restoreExpCfg := setTempValue(&expURL.RawQuery, "replaced by test")
-
-			if !reflect.DeepEqual(gotCfg, expCfg) {
-				t.Errorf("unexpected parsed config for %s file:\nexp %v\ngot %v", ext, expCfg, gotCfg)
+			if !sameConfig(gotCfg, expCfg) {
+				t.Errorf("unexpected parsed config for %s file:\nexp %#v\ngot %#v", ext, expCfg, gotCfg)
 			}
 
-			restoreExpCfg()
-			restoreGotCfg()
 		}
 	})
 
 	t.Run("override input config", func(t *testing.T) {
 		cfg := runner.Config{}
-		cfg.Request.Method = "POST"
+		cfg.Request = testutil.MustMakeRequest("POST", "https://overriden.com", nil, nil)
 		cfg.Runner.GlobalTimeout = 10 * time.Millisecond
 
 		fname := configPath("valid/benchttp-zeros.yml")
@@ -200,18 +192,17 @@ func TestParse(t *testing.T) {
 // newExpConfig returns the expected runner.ConfigConfig result after parsing
 // one of the config files in testdataConfigPath.
 func newExpConfig() runner.Config {
-	u, _ := url.ParseRequestURI(testURL)
 	return runner.Config{
-		Request: runner.RequestConfig{
-			Method: "POST",
-			URL:    u,
-			Header: http.Header{
+		Request: testutil.MustMakeRequest(
+			"POST",
+			validURL,
+			http.Header{
 				"key0": []string{"val0", "val1"},
 				"key1": []string{"val0"},
 			},
-			Body: runner.NewRequestBody("raw", `{"key0":"val0","key1":"val1"}`),
-		},
-		Runner: runner.RecorderConfig{
+			[]byte(`{"key0":"val0","key1":"val1"}`),
+		),
+		Runner: runner.RunnerConfig{
 			Requests:       100,
 			Concurrency:    1,
 			Interval:       50 * time.Millisecond,
@@ -241,6 +232,15 @@ func newExpConfig() runner.Config {
 	}
 }
 
+func sameConfig(a, b runner.Config) bool {
+	if a.Request == nil || b.Request == nil {
+		return a.Request == nil && b.Request == nil
+	}
+	return sameURL(a.Request.URL, b.Request.URL) &&
+		sameHeader(a.Request.Header, b.Request.Header) &&
+		sameBody(a.Request.Body, b.Request.Body)
+}
+
 // sameURL returns true if a and b are the same *url.URL, taking into account
 // the undeterministic nature of their RawQuery.
 func sameURL(a, b *url.URL) bool {
@@ -258,6 +258,20 @@ func sameURL(a, b *url.URL) bool {
 	return reflect.DeepEqual(a, b)
 }
 
+func sameHeader(a, b http.Header) bool {
+	return reflect.DeepEqual(a, b)
+	// if len(a) != len(b) {
+	// 	return false
+	// }
+	// for k, values := range a {
+	// 	if len(values) != len()
+	// }
+}
+
+func sameBody(a, b io.ReadCloser) bool {
+	return reflect.DeepEqual(a, b)
+}
+
 // setTempValue sets *ptr to val and returns a restore func that sets *ptr
 // back to its previous value.
 func setTempValue(ptr *string, val string) (restore func()) {
@@ -269,5 +283,5 @@ func setTempValue(ptr *string, val string) (restore func()) {
 }
 
 func configPath(name string) string {
-	return filepath.Join(testdataConfigPath, name)
+	return filepath.Join(validConfigPath, name)
 }

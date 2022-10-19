@@ -1,6 +1,7 @@
 package render_test
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ func TestReport_String(t *testing.T) {
 
 		rep := &runner.Report{
 			Metrics: metrics,
-			Metadata: runner.ReportMetadata{
+			Metadata: runner.Metadata{
 				Config:        cfg,
 				TotalDuration: duration,
 			},
@@ -44,7 +45,7 @@ func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
 
 func configStub() runner.Config {
 	cfg := runner.Config{}
-	cfg.Request = cfg.Request.WithURL("https://a.b.com")
+	cfg.Request = mustMakeRequest("https://a.b.com")
 	cfg.Runner.Requests = -1
 	return cfg
 }
@@ -66,4 +67,12 @@ Total duration     15000ms
 	if summary != expSummary {
 		t.Errorf("\nexp summary:\n%q\ngot summary:\n%q", expSummary, summary)
 	}
+}
+
+func mustMakeRequest(uri string) *http.Request {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		panic(err)
+	}
+	return req
 }

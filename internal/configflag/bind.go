@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/benchttp/engine/configparse"
-	"github.com/benchttp/engine/runner"
 )
 
 // Bind reads arguments provided to flagset as config fields
@@ -17,7 +16,7 @@ import (
 // bindings its values would fail.
 func Bind(flagset *flag.FlagSet, dst *configparse.Representation) {
 	for field, bind := range bindings {
-		flagset.Func(field, runner.ConfigFieldsUsage[field], bind(dst))
+		flagset.Func(field, flagsUsage[field], bind(dst))
 	}
 }
 
@@ -27,19 +26,19 @@ type (
 )
 
 var bindings = map[string]func(*repr) flagSetter{
-	runner.ConfigFieldMethod: func(dst *repr) flagSetter {
+	flagMethod: func(dst *repr) flagSetter {
 		return func(in string) error {
 			dst.Request.Method = &in
 			return nil
 		}
 	},
-	runner.ConfigFieldURL: func(dst *repr) flagSetter {
+	flagURL: func(dst *repr) flagSetter {
 		return func(in string) error {
 			dst.Request.URL = &in
 			return nil
 		}
 	},
-	runner.ConfigFieldHeader: func(dst *repr) flagSetter {
+	flagHeader: func(dst *repr) flagSetter {
 		return func(in string) error {
 			keyval := strings.SplitN(in, ":", 2)
 			if len(keyval) != 2 {
@@ -53,7 +52,7 @@ var bindings = map[string]func(*repr) flagSetter{
 			return nil
 		}
 	},
-	runner.ConfigFieldBody: func(dst *repr) flagSetter {
+	flagBody: func(dst *repr) flagSetter {
 		return func(in string) error {
 			errFormat := fmt.Errorf(`expect format "<type>:<content>", got %q`, in)
 			if in == "" {
@@ -84,7 +83,7 @@ var bindings = map[string]func(*repr) flagSetter{
 			return nil
 		}
 	},
-	runner.ConfigFieldRequests: func(dst *repr) flagSetter {
+	flagRequests: func(dst *repr) flagSetter {
 		return func(in string) error {
 			n, err := strconv.Atoi(in)
 			if err != nil {
@@ -94,7 +93,7 @@ var bindings = map[string]func(*repr) flagSetter{
 			return nil
 		}
 	},
-	runner.ConfigFieldConcurrency: func(dst *repr) flagSetter {
+	flagConcurrency: func(dst *repr) flagSetter {
 		return func(in string) error {
 			n, err := strconv.Atoi(in)
 			if err != nil {
@@ -104,19 +103,19 @@ var bindings = map[string]func(*repr) flagSetter{
 			return nil
 		}
 	},
-	runner.ConfigFieldInterval: func(dst *repr) flagSetter {
+	flagInterval: func(dst *repr) flagSetter {
 		return func(in string) error {
 			dst.Runner.Interval = &in
 			return nil
 		}
 	},
-	runner.ConfigFieldRequestTimeout: func(dst *repr) flagSetter {
+	flagRequestTimeout: func(dst *repr) flagSetter {
 		return func(in string) error {
 			dst.Runner.RequestTimeout = &in
 			return nil
 		}
 	},
-	runner.ConfigFieldGlobalTimeout: func(dst *repr) flagSetter {
+	flagGlobalTimeout: func(dst *repr) flagSetter {
 		return func(in string) error {
 			dst.Runner.GlobalTimeout = &in
 			return nil

@@ -106,7 +106,7 @@ func parseAndMergeConfigs(reprs []configparse.Representation, dst *runner.Config
 	}
 
 	for i := len(reprs) - 1; i >= 0; i-- {
-		if err := reprs[i].Unmarshal(dst); err != nil {
+		if err := reprs[i].ParseInto(dst); err != nil {
 			return errorutil.WithDetails(ErrFileParse, err)
 		}
 	}

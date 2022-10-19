@@ -40,7 +40,7 @@ func (cmd *cmdRun) execute(args []string) error {
 		return err
 	}
 
-	config, err := cmd.buildConfig()
+	config, err := buildConfig(cmd.configFile, cmd.configRepr)
 	if err != nil {
 		return err
 	}
@@ -60,12 +60,15 @@ func (cmd *cmdRun) parseArgs(args []string) error {
 	return cmd.flagset.Parse(args)
 }
 
-func (cmd *cmdRun) buildConfig() (runner.Config, error) {
+func buildConfig(
+	filePath string,
+	cliConfigRepr configparse.Representation,
+) (runner.Config, error) {
 	// start with default config as base
 	config := runner.DefaultConfig()
 
 	// override with config file values
-	err := configfile.Parse(cmd.configFile, &config)
+	err := configfile.Parse(filePath, &config)
 	if err != nil && !errors.Is(err, configfile.ErrFileNotFound) {
 		// config file is not mandatory: discard ErrFileNotFound.
 		// other errors are critical
@@ -73,7 +76,7 @@ func (cmd *cmdRun) buildConfig() (runner.Config, error) {
 	}
 
 	// override with CLI flags values
-	if err := cmd.configRepr.Unmarshal(&config); err != nil {
+	if err := cliConfigRepr.ParseInto(&config); err != nil {
 		return config, err
 	}
 
