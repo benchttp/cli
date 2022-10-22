@@ -14,12 +14,12 @@ import (
 func TestReport_String(t *testing.T) {
 	t.Run("returns metrics summary", func(t *testing.T) {
 		metrics, duration := metricsStub()
-		cfg := configStub()
+		runner := runnerStub()
 
 		rep := &runner.Report{
 			Metrics: metrics,
-			Metadata: runner.Metadata{
-				Config:        cfg,
+			Metadata: benchttp.Metadata{
+				Runner:        runner,
 				TotalDuration: duration,
 			},
 		}
@@ -43,11 +43,11 @@ func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
 	}, 15 * time.Second
 }
 
-func configStub() runner.Config {
-	cfg := runner.Config{}
-	cfg.Request = mustMakeRequest("https://a.b.com")
-	cfg.Runner.Requests = -1
-	return cfg
+func runnerStub() runner.Runner {
+	brunner := runner.Runner{}
+	brunner.Request = mustMakeRequest("https://a.b.com")
+	brunner.Requests = -1
+	return brunner
 }
 
 func checkSummary(t *testing.T, summary string) {

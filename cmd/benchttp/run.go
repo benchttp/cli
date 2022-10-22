@@ -63,24 +63,24 @@ func (cmd *cmdRun) parseArgs(args []string) error {
 func buildConfig(
 	filePath string,
 	cliConfigRepr configparse.Representation,
-) (runner.Config, error) {
-	// start with default config as base
-	config := runner.DefaultConfig()
+) (runner.Runner, error) {
+	// start with default brunner as base
+	brunner := runner.DefaultRunner()
 
 	// override with config file values
-	err := configfile.Parse(filePath, &config)
+	err := configfile.Parse(filePath, &brunner)
 	if err != nil && !errors.Is(err, configfile.ErrFileNotFound) {
 		// config file is not mandatory: discard ErrFileNotFound.
 		// other errors are critical
-		return config, err
+		return brunner, err
 	}
 
 	// override with CLI flags values
-	if err := cliConfigRepr.ParseInto(&config); err != nil {
-		return config, err
+	if err := cliConfigRepr.ParseInto(&brunner); err != nil {
+		return brunner, err
 	}
 
-	return config, nil
+	return brunner, nil
 }
 
 func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
@@ -97,7 +97,7 @@ func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 	}
 }
 
-func runBenchmark(cfg runner.Config, silent bool) (*runner.Report, error) {
+func runBenchmark(brunner runner.Runner, silent bool) (*runner.Report, error) {
 	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
 	ctx, cancel := context.WithCancel(context.Background())
 	go signals.ListenOSInterrupt(cancel)
@@ -105,7 +105,7 @@ func runBenchmark(cfg runner.Config, silent bool) (*runner.Report, error) {
 	// Run the benchmark
 	report, err := runner.
 		New(onRecordingProgress(silent)).
-		Run(ctx, cfg)
+		Run(ctx, brunner)
 	if err != nil {
 		return report, err
 	}

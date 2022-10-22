@@ -70,8 +70,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				cfg := runner.Config{}
-				gotErr := configfile.Parse(tc.path, &cfg)
+				brunner := runner.Runner{}
+				gotErr := configfile.Parse(tc.path, &brunner)
 
 				if gotErr == nil {
 					t.Fatal("exp non-nil error, got nil")
@@ -81,8 +81,8 @@ func TestParse(t *testing.T) {
 					t.Errorf("\nexp %v\ngot %v", tc.expErr, gotErr)
 				}
 
-				if !reflect.DeepEqual(cfg, runner.Config{}) {
-					t.Errorf("\nexp empty config\ngot %v", cfg)
+				if !reflect.DeepEqual(brunner, runner.Runner{}) {
+					t.Errorf("\nexp empty config\ngot %v", brunner)
 				}
 			})
 		}
@@ -93,13 +93,13 @@ func TestParse(t *testing.T) {
 			expCfg := newExpConfig()
 			fname := configPath("valid/benchttp" + ext)
 
-			gotCfg := runner.Config{}
+			gotCfg := runner.Runner{}
 			if err := configfile.Parse(fname, &gotCfg); err != nil {
 				// critical error, stop the test
 				t.Fatal(err)
 			}
 
-			if sameConfig(gotCfg, runner.Config{}) {
+			if sameConfig(gotCfg, runner.Runner{}) {
 				t.Error("received an empty configuration")
 			}
 
@@ -111,13 +111,13 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("override input config", func(t *testing.T) {
-		cfg := runner.Config{}
-		cfg.Request = testutil.MustMakeRequest("POST", "https://overriden.com", nil, nil)
-		cfg.Runner.GlobalTimeout = 10 * time.Millisecond
+		brunner := runner.Runner{}
+		brunner.Request = testutil.MustMakeRequest("POST", "https://overriden.com", nil, nil)
+		brunner.GlobalTimeout = 10 * time.Millisecond
 
 		fname := configPath("valid/benchttp-zeros.yml")
 
-		if err := configfile.Parse(fname, &cfg); err != nil {
+		if err := configfile.Parse(fname, &brunner); err != nil {
 			t.Fatal(err)
 		}
 
@@ -126,7 +126,7 @@ func TestParse(t *testing.T) {
 			expGlobalTimeout = 42 * time.Millisecond // from read file
 		)
 
-		if gotMethod := cfg.Request.Method; gotMethod != expMethod {
+		if gotMethod := brunner.Request.Method; gotMethod != expMethod {
 			t.Errorf(
 				"did not keep input values that are not set: "+
 					"exp Request.Method == %s, got %s",
@@ -134,7 +134,7 @@ func TestParse(t *testing.T) {
 			)
 		}
 
-		if gotGlobalTimeout := cfg.Runner.GlobalTimeout; gotGlobalTimeout != expGlobalTimeout {
+		if gotGlobalTimeout := brunner.GlobalTimeout; gotGlobalTimeout != expGlobalTimeout {
 			t.Errorf(
 				"did not override input values that are set: "+
 					"exp Runner.GlobalTimeout == %v, got %v",
@@ -142,7 +142,7 @@ func TestParse(t *testing.T) {
 			)
 		}
 
-		t.Log(cfg)
+		t.Log(brunner)
 	})
 
 	t.Run("extend config files", func(t *testing.T) {
@@ -165,8 +165,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				var cfg runner.Config
-				if err := configfile.Parse(tc.cfpath, &cfg); err != nil {
+				var brunner runner.Runner
+				if err := configfile.Parse(tc.cfpath, &brunner); err != nil {
 					t.Fatal(err)
 				}
 
@@ -175,11 +175,11 @@ func TestParse(t *testing.T) {
 					expURL    = fmt.Sprintf("http://%s.config", tc.cfname)
 				)
 
-				if gotMethod := cfg.Request.Method; gotMethod != expMethod {
+				if gotMethod := brunner.Request.Method; gotMethod != expMethod {
 					t.Errorf("method: exp %s, got %s", expMethod, gotMethod)
 				}
 
-				if gotURL := cfg.Request.URL.String(); gotURL != expURL {
+				if gotURL := brunner.Request.URL.String(); gotURL != expURL {
 					t.Errorf("url: exp %s, got %s", expURL, gotURL)
 				}
 			})
@@ -191,8 +191,8 @@ func TestParse(t *testing.T) {
 
 // newExpConfig returns the expected runner.ConfigConfig result after parsing
 // one of the config files in testdataConfigPath.
-func newExpConfig() runner.Config {
-	return runner.Config{
+func newExpConfig() runner.Runner {
+	return runner.Runner{
 		Request: testutil.MustMakeRequest(
 			"POST",
 			validURL,
@@ -202,13 +202,13 @@ func newExpConfig() runner.Config {
 			},
 			[]byte(`{"key0":"val0","key1":"val1"}`),
 		),
-		Runner: runner.RunnerConfig{
-			Requests:       100,
-			Concurrency:    1,
-			Interval:       50 * time.Millisecond,
-			RequestTimeout: 2 * time.Second,
-			GlobalTimeout:  60 * time.Second,
-		},
+
+		Requests:       100,
+		Concurrency:    1,
+		Interval:       50 * time.Millisecond,
+		RequestTimeout: 2 * time.Second,
+		GlobalTimeout:  60 * time.Second,
+
 		Tests: []runner.TestCase{
 			{
 				Name:      "minimum response time",
@@ -232,7 +232,7 @@ func newExpConfig() runner.Config {
 	}
 }
 
-func sameConfig(a, b runner.Config) bool {
+func sameConfig(a, b runner.Runner) bool {
 	if a.Request == nil || b.Request == nil {
 		return a.Request == nil && b.Request == nil
 	}
