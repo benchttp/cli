@@ -45,7 +45,7 @@ func ReportSummaryString(rep *runner.Report) string {
 	b.WriteString(ansi.Bold("→ Summary"))
 	b.WriteString("\n")
 	b.WriteString(line("Endpoint", cfg.Request.URL))
-	b.WriteString(line("Requests", formatRequests(len(m.Records), cfg.Runner.Requests)))
+	b.WriteString(line("Requests", formatRequests(len(m.Records), cfg.Requests)))
 	b.WriteString(line("Errors", len(m.RequestFailures)))
 	b.WriteString(line("Min response time", msString(m.ResponseTimes.Min)))
 	b.WriteString(line("Max response time", msString(m.ResponseTimes.Max)))

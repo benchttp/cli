@@ -11,16 +11,16 @@ import (
 	"github.com/benchttp/cli/internal/errorutil"
 )
 
-// Parse parses given filename as a benchttp runner config file
-// into a runner.Config and stores the retrieved values into *dst.
+// Parse parses given filename as a benchttp runner configuration
+// into a runner.Runner and stores the retrieved values into *dst.
 // It returns the first error occurring in the process, which can be
 // any of the values declared in the package.
-func Parse(filename string, cfg *runner.Config) (err error) {
+func Parse(filename string, dst *runner.Runner) (err error) {
 	reprs, err := parseFileRecursive(filename, []configparse.Representation{}, set{})
 	if err != nil {
 		return
 	}
-	return parseAndMergeConfigs(reprs, cfg)
+	return parseAndMergeConfigs(reprs, dst)
 }
 
 // set is a collection of unique string values.
@@ -92,11 +92,12 @@ func parseFile(filename string) (repr configparse.Representation, err error) {
 	return repr, nil
 }
 
-// parseAndMergeConfigs iterates backwards over uconfs, parsing them
-// as runner.ConfigGlobal and merging them into a single one.
+// parseAndMergeConfigs iterates backwards over reprs, parses them as
+// runner.Runner, merges them successively and finally stores the result
+// into dst.
 // It returns the merged result or the first non-nil error occurring in the
 // process.
-func parseAndMergeConfigs(reprs []configparse.Representation, dst *runner.Config) error {
+func parseAndMergeConfigs(reprs []configparse.Representation, dst *runner.Runner) error {
 	if len(reprs) == 0 { // supposedly catched upstream, should not occur
 		return errors.New(
 			"an unacceptable error occurred parsing the config file, " +
