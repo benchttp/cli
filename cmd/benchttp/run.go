@@ -83,6 +83,23 @@ func buildConfig(
 	return brunner, nil
 }
 
+func runBenchmark(brunner runner.Runner, silent bool) (*runner.Report, error) {
+	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
+	ctx, cancel := context.WithCancel(context.Background())
+	go signals.ListenOSInterrupt(cancel)
+
+	// Stream progress to stdout
+	brunner.OnProgress = onRecordingProgress(silent)
+
+	// Run the benchmark
+	report, err := brunner.Run(ctx)
+	if err != nil {
+		return report, err
+	}
+
+	return report, nil
+}
+
 func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 	if silent {
 		return func(runner.RecordingProgress) {}
@@ -95,22 +112,6 @@ func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
 	return func(progress runner.RecordingProgress) {
 		render.Progress(os.Stdout, progress) //nolint: errcheck
 	}
-}
-
-func runBenchmark(brunner runner.Runner, silent bool) (*runner.Report, error) {
-	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
-	ctx, cancel := context.WithCancel(context.Background())
-	go signals.ListenOSInterrupt(cancel)
-
-	// Run the benchmark
-	report, err := runner.
-		New(onRecordingProgress(silent)).
-		Run(ctx, brunner)
-	if err != nil {
-		return report, err
-	}
-
-	return report, nil
 }
 
 func renderReport(w io.Writer, report *runner.Report, silent bool) error {
