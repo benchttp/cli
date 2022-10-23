@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/sdk/benchttp"
 
 	"github.com/benchttp/cli/internal/render"
 	"github.com/benchttp/cli/internal/render/ansi"
@@ -16,7 +16,7 @@ func TestReport_String(t *testing.T) {
 		metrics, duration := metricsStub()
 		runner := runnerStub()
 
-		rep := &runner.Report{
+		rep := &benchttp.Report{
 			Metrics: metrics,
 			Metadata: benchttp.Metadata{
 				Runner:        runner,
@@ -29,13 +29,13 @@ func TestReport_String(t *testing.T) {
 
 // helpers
 
-func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
-	return runner.MetricsAggregate{
+func metricsStub() (agg benchttp.MetricsAggregate, total time.Duration) {
+	return benchttp.MetricsAggregate{
 		RequestFailures: make([]struct {
 			Reason string
 		}, 1),
 		Records: make([]struct{ ResponseTime time.Duration }, 3),
-		ResponseTimes: runner.MetricsTimeStats{
+		ResponseTimes: benchttp.MetricsTimeStats{
 			Min:  4 * time.Second,
 			Max:  6 * time.Second,
 			Mean: 5 * time.Second,
@@ -43,11 +43,11 @@ func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
 	}, 15 * time.Second
 }
 
-func runnerStub() runner.Runner {
-	brunner := runner.Runner{}
-	brunner.Request = mustMakeRequest("https://a.b.com")
-	brunner.Requests = -1
-	return brunner
+func runnerStub() benchttp.Runner {
+	runner := benchttp.Runner{}
+	runner.Request = mustMakeRequest("https://a.b.com")
+	runner.Requests = -1
+	return runner
 }
 
 func checkSummary(t *testing.T, summary string) {

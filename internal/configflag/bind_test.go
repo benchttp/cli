@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/benchttp/engine/configparse"
+	"github.com/benchttp/sdk/configparse"
 
 	"github.com/benchttp/cli/internal/configflag"
 )

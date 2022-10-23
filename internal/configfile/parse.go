@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/benchttp/engine/configparse"
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/sdk/benchttp"
+	"github.com/benchttp/sdk/configparse"
 
 	"github.com/benchttp/cli/internal/errorutil"
 )
@@ -15,7 +15,7 @@ import (
 // into a runner.Runner and stores the retrieved values into *dst.
 // It returns the first error occurring in the process, which can be
 // any of the values declared in the package.
-func Parse(filename string, dst *runner.Runner) (err error) {
+func Parse(filename string, dst *benchttp.Runner) (err error) {
 	reprs, err := parseFileRecursive(filename, []configparse.Representation{}, set{})
 	if err != nil {
 		return
@@ -97,7 +97,7 @@ func parseFile(filename string) (repr configparse.Representation, err error) {
 // into dst.
 // It returns the merged result or the first non-nil error occurring in the
 // process.
-func parseAndMergeConfigs(reprs []configparse.Representation, dst *runner.Runner) error {
+func parseAndMergeConfigs(reprs []configparse.Representation, dst *benchttp.Runner) error {
 	if len(reprs) == 0 { // supposedly catched upstream, should not occur
 		return errors.New(
 			"an unacceptable error occurred parsing the config file, " +
