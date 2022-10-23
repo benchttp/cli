@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/sdk/benchttp"
 
 	"github.com/benchttp/cli/internal/configfile"
 	"github.com/benchttp/cli/internal/testutil"
@@ -70,8 +70,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				brunner := runner.Runner{}
-				gotErr := configfile.Parse(tc.path, &brunner)
+				runner := benchttp.Runner{}
+				gotErr := configfile.Parse(tc.path, &runner)
 
 				if gotErr == nil {
 					t.Fatal("exp non-nil error, got nil")
@@ -81,8 +81,8 @@ func TestParse(t *testing.T) {
 					t.Errorf("\nexp %v\ngot %v", tc.expErr, gotErr)
 				}
 
-				if !reflect.DeepEqual(brunner, runner.Runner{}) {
-					t.Errorf("\nexp empty config\ngot %v", brunner)
+				if !reflect.DeepEqual(runner, benchttp.Runner{}) {
+					t.Errorf("\nexp empty config\ngot %v", runner)
 				}
 			})
 		}
@@ -93,13 +93,13 @@ func TestParse(t *testing.T) {
 			expCfg := newExpConfig()
 			fname := configPath("valid/benchttp" + ext)
 
-			gotCfg := runner.Runner{}
+			gotCfg := benchttp.Runner{}
 			if err := configfile.Parse(fname, &gotCfg); err != nil {
 				// critical error, stop the test
 				t.Fatal(err)
 			}
 
-			if sameConfig(gotCfg, runner.Runner{}) {
+			if sameConfig(gotCfg, benchttp.Runner{}) {
 				t.Error("received an empty configuration")
 			}
 
@@ -111,13 +111,13 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("override input config", func(t *testing.T) {
-		brunner := runner.Runner{}
-		brunner.Request = testutil.MustMakeRequest("POST", "https://overriden.com", nil, nil)
-		brunner.GlobalTimeout = 10 * time.Millisecond
+		runner := benchttp.Runner{}
+		runner.Request = testutil.MustMakeRequest("POST", "https://overriden.com", nil, nil)
+		runner.GlobalTimeout = 10 * time.Millisecond
 
 		fname := configPath("valid/benchttp-zeros.yml")
 
-		if err := configfile.Parse(fname, &brunner); err != nil {
+		if err := configfile.Parse(fname, &runner); err != nil {
 			t.Fatal(err)
 		}
 
@@ -126,7 +126,7 @@ func TestParse(t *testing.T) {
 			expGlobalTimeout = 42 * time.Millisecond // from read file
 		)
 
-		if gotMethod := brunner.Request.Method; gotMethod != expMethod {
+		if gotMethod := runner.Request.Method; gotMethod != expMethod {
 			t.Errorf(
 				"did not keep input values that are not set: "+
 					"exp Request.Method == %s, got %s",
@@ -134,7 +134,7 @@ func TestParse(t *testing.T) {
 			)
 		}
 
-		if gotGlobalTimeout := brunner.GlobalTimeout; gotGlobalTimeout != expGlobalTimeout {
+		if gotGlobalTimeout := runner.GlobalTimeout; gotGlobalTimeout != expGlobalTimeout {
 			t.Errorf(
 				"did not override input values that are set: "+
 					"exp Runner.GlobalTimeout == %v, got %v",
@@ -142,7 +142,7 @@ func TestParse(t *testing.T) {
 			)
 		}
 
-		t.Log(brunner)
+		t.Log(runner)
 	})
 
 	t.Run("extend config files", func(t *testing.T) {
@@ -165,8 +165,8 @@ func TestParse(t *testing.T) {
 
 		for _, tc := range testcases {
 			t.Run(tc.label, func(t *testing.T) {
-				var brunner runner.Runner
-				if err := configfile.Parse(tc.cfpath, &brunner); err != nil {
+				var runner benchttp.Runner
+				if err := configfile.Parse(tc.cfpath, &runner); err != nil {
 					t.Fatal(err)
 				}
 
@@ -175,11 +175,11 @@ func TestParse(t *testing.T) {
 					expURL    = fmt.Sprintf("http://%s.config", tc.cfname)
 				)
 
-				if gotMethod := brunner.Request.Method; gotMethod != expMethod {
+				if gotMethod := runner.Request.Method; gotMethod != expMethod {
 					t.Errorf("method: exp %s, got %s", expMethod, gotMethod)
 				}
 
-				if gotURL := brunner.Request.URL.String(); gotURL != expURL {
+				if gotURL := runner.Request.URL.String(); gotURL != expURL {
 					t.Errorf("url: exp %s, got %s", expURL, gotURL)
 				}
 			})
@@ -191,8 +191,8 @@ func TestParse(t *testing.T) {
 
 // newExpConfig returns the expected runner.ConfigConfig result after parsing
 // one of the config files in testdataConfigPath.
-func newExpConfig() runner.Runner {
-	return runner.Runner{
+func newExpConfig() benchttp.Runner {
+	return benchttp.Runner{
 		Request: testutil.MustMakeRequest(
 			"POST",
 			validURL,
@@ -209,7 +209,7 @@ func newExpConfig() runner.Runner {
 		RequestTimeout: 2 * time.Second,
 		GlobalTimeout:  60 * time.Second,
 
-		Tests: []runner.TestCase{
+		Tests: []benchttp.TestCase{
 			{
 				Name:      "minimum response time",
 				Field:     "ResponseTimes.Min",
@@ -232,7 +232,7 @@ func newExpConfig() runner.Runner {
 	}
 }
 
-func sameConfig(a, b runner.Runner) bool {
+func sameConfig(a, b benchttp.Runner) bool {
 	if a.Request == nil || b.Request == nil {
 		return a.Request == nil && b.Request == nil
 	}

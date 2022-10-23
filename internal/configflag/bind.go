@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/benchttp/engine/configparse"
+	"github.com/benchttp/sdk/configparse"
 )
 
 // Bind reads arguments provided to flagset as config fields

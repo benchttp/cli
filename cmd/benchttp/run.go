@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/benchttp/engine/configparse"
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/sdk/benchttp"
+	"github.com/benchttp/sdk/configparse"
 
 	"github.com/benchttp/cli/internal/configfile"
 	"github.com/benchttp/cli/internal/configflag"
@@ -63,36 +63,36 @@ func (cmd *cmdRun) parseArgs(args []string) error {
 func buildConfig(
 	filePath string,
 	cliConfigRepr configparse.Representation,
-) (runner.Runner, error) {
-	// start with default brunner as base
-	brunner := runner.DefaultRunner()
+) (benchttp.Runner, error) {
+	// start with default runner as base
+	runner := benchttp.DefaultRunner()
 
 	// override with config file values
-	err := configfile.Parse(filePath, &brunner)
+	err := configfile.Parse(filePath, &runner)
 	if err != nil && !errors.Is(err, configfile.ErrFileNotFound) {
 		// config file is not mandatory: discard ErrFileNotFound.
 		// other errors are critical
-		return brunner, err
+		return runner, err
 	}
 
 	// override with CLI flags values
-	if err := cliConfigRepr.ParseInto(&brunner); err != nil {
-		return brunner, err
+	if err := cliConfigRepr.ParseInto(&runner); err != nil {
+		return runner, err
 	}
 
-	return brunner, nil
+	return runner, nil
 }
 
-func runBenchmark(brunner runner.Runner, silent bool) (*runner.Report, error) {
+func runBenchmark(runner benchttp.Runner, silent bool) (*benchttp.Report, error) {
 	// Prepare graceful shutdown in case of os.Interrupt (Ctrl+C)
 	ctx, cancel := context.WithCancel(context.Background())
 	go signals.ListenOSInterrupt(cancel)
 
 	// Stream progress to stdout
-	brunner.OnProgress = onRecordingProgress(silent)
+	runner.OnProgress = onRecordingProgress(silent)
 
 	// Run the benchmark
-	report, err := brunner.Run(ctx)
+	report, err := runner.Run(ctx)
 	if err != nil {
 		return report, err
 	}
@@ -100,21 +100,21 @@ func runBenchmark(brunner runner.Runner, silent bool) (*runner.Report, error) {
 	return report, nil
 }
 
-func onRecordingProgress(silent bool) func(runner.RecordingProgress) {
+func onRecordingProgress(silent bool) func(benchttp.RecordingProgress) {
 	if silent {
-		return func(runner.RecordingProgress) {}
+		return func(benchttp.RecordingProgress) {}
 	}
 
 	// hack: write a blank line as render.Progress always
 	// erases the previous line
 	fmt.Println()
 
-	return func(progress runner.RecordingProgress) {
+	return func(progress benchttp.RecordingProgress) {
 		render.Progress(os.Stdout, progress) //nolint: errcheck
 	}
 }
 
-func renderReport(w io.Writer, report *runner.Report, silent bool) error {
+func renderReport(w io.Writer, report *benchttp.Report, silent bool) error {
 	writeIfNotSilent := output.ConditionalWriter{Writer: w}.If(!silent)
 
 	if _, err := render.ReportSummary(writeIfNotSilent, report); err != nil {

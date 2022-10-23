@@ -3,7 +3,7 @@ package configfile
 import (
 	"errors"
 
-	"github.com/benchttp/engine/configparse"
+	"github.com/benchttp/sdk/configparse"
 )
 
 type extension string
