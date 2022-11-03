@@ -9,9 +9,8 @@ import (
 	"os"
 
 	"github.com/benchttp/sdk/benchttp"
-	"github.com/benchttp/sdk/configparse"
+	"github.com/benchttp/sdk/configio"
 
-	"github.com/benchttp/cli/internal/configfile"
 	"github.com/benchttp/cli/internal/configflag"
 	"github.com/benchttp/cli/internal/output"
 	"github.com/benchttp/cli/internal/render"
@@ -29,7 +28,7 @@ type cmdRun struct {
 	silent bool
 
 	// configRepr is the runner config resulting from config flag values
-	configRepr configparse.Representation
+	configRepr configio.Representation
 }
 
 // execute runs the benchttp runner: it parses CLI flags, loads config
@@ -54,7 +53,7 @@ func (cmd *cmdRun) execute(args []string) error {
 }
 
 func (cmd *cmdRun) parseArgs(args []string) error {
-	cmd.flagset.StringVar(&cmd.configFile, "configFile", configfile.Find(), "Config file path")
+	cmd.flagset.StringVar(&cmd.configFile, "configFile", configio.FindFile(), "Config file path")
 	cmd.flagset.BoolVar(&cmd.silent, "silent", false, "Silent mode")
 	configflag.Bind(cmd.flagset, &cmd.configRepr)
 	return cmd.flagset.Parse(args)
@@ -62,21 +61,21 @@ func (cmd *cmdRun) parseArgs(args []string) error {
 
 func buildConfig(
 	filePath string,
-	cliConfigRepr configparse.Representation,
+	cliConfigRepr configio.Representation,
 ) (benchttp.Runner, error) {
 	// start with default runner as base
 	runner := benchttp.DefaultRunner()
 
 	// override with config file values
-	err := configfile.Parse(filePath, &runner)
-	if err != nil && !errors.Is(err, configfile.ErrFileNotFound) {
+	err := configio.UnmarshalFile(filePath, &runner)
+	if err != nil && !errors.Is(err, configio.ErrFileNotFound) {
 		// config file is not mandatory: discard ErrFileNotFound.
 		// other errors are critical
 		return runner, err
 	}
 
 	// override with CLI flags values
-	if err := cliConfigRepr.ParseInto(&runner); err != nil {
+	if err := cliConfigRepr.Into(&runner); err != nil {
 		return runner, err
 	}
 
