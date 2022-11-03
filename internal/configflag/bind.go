@@ -7,21 +7,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/benchttp/sdk/configparse"
+	"github.com/benchttp/sdk/configio"
 )
 
 // Bind reads arguments provided to flagset as config fields
 // and binds their value to the appropriate fields of dst.
 // The provided *flag.Flagset must not have been parsed yet, otherwise
 // bindings its values would fail.
-func Bind(flagset *flag.FlagSet, dst *configparse.Representation) {
+func Bind(flagset *flag.FlagSet, dst *configio.Representation) {
 	for field, bind := range bindings {
 		flagset.Func(field, flagsUsage[field], bind(dst))
 	}
 }
 
 type (
-	repr       = configparse.Representation
+	repr       = configio.Representation
 	flagSetter = func(string) error
 )
 

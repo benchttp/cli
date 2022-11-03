@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/benchttp/sdk/configparse"
+	"github.com/benchttp/sdk/configio"
 
 	"github.com/benchttp/cli/internal/configflag"
 )
@@ -15,13 +15,13 @@ func TestBind(t *testing.T) {
 		flagset := flag.NewFlagSet("", flag.ExitOnError)
 		args := []string{} // no args
 
-		repr := configparse.Representation{}
+		repr := configio.Representation{}
 		configflag.Bind(flagset, &repr)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
 		}
 
-		exp := configparse.Representation{}
+		exp := configio.Representation{}
 		if got := repr; !reflect.DeepEqual(got, exp) {
 			t.Errorf("\nexp %#v\ngot %#v", exp, got)
 		}
@@ -43,7 +43,7 @@ func TestBind(t *testing.T) {
 			"-globalTimeout", "5s",
 		}
 
-		repr := configparse.Representation{}
+		repr := configio.Representation{}
 		configflag.Bind(flagset, &repr)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
