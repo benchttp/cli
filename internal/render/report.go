@@ -7,17 +7,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/sdk/benchttp"
 
 	"github.com/benchttp/cli/internal/render/ansi"
 )
 
-func ReportSummary(w io.Writer, rep *runner.Report) (int, error) {
+func ReportSummary(w io.Writer, rep *benchttp.Report) (int, error) {
 	return w.Write([]byte(ReportSummaryString(rep)))
 }
 
 // String returns a default summary of the Report as a string.
-func ReportSummaryString(rep *runner.Report) string {
+func ReportSummaryString(rep *benchttp.Report) string {
 	var b strings.Builder
 
 	line := func(name string, value interface{}) string {
@@ -45,7 +45,7 @@ func ReportSummaryString(rep *runner.Report) string {
 	b.WriteString(ansi.Bold("→ Summary"))
 	b.WriteString("\n")
 	b.WriteString(line("Endpoint", cfg.Request.URL))
-	b.WriteString(line("Requests", formatRequests(len(m.Records), cfg.Runner.Requests)))
+	b.WriteString(line("Requests", formatRequests(len(m.Records), cfg.Requests)))
 	b.WriteString(line("Errors", len(m.RequestFailures)))
 	b.WriteString(line("Min response time", msString(m.ResponseTimes.Min)))
 	b.WriteString(line("Max response time", msString(m.ResponseTimes.Max)))
