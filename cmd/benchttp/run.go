@@ -21,14 +21,10 @@ import (
 type cmdRun struct {
 	flagset *flag.FlagSet
 
-	// configFile is the parsed value for flag -configFile
-	configFile string
+	configFile string // parsed value for flag -configFile
+	silent     bool   // parsed value for flag -silent
 
-	// silent is the parsed value for flag -silent
-	silent bool
-
-	// configRepr is the runner config resulting from config flag values
-	configRepr configio.Representation
+	builder configio.Builder
 }
 
 // execute runs the benchttp runner: it parses CLI flags, loads config
@@ -39,7 +35,7 @@ func (cmd *cmdRun) execute(args []string) error {
 		return err
 	}
 
-	config, err := buildConfig(cmd.configFile, cmd.configRepr)
+	config, err := buildConfig(cmd.builder, cmd.configFile)
 	if err != nil {
 		return err
 	}
@@ -55,15 +51,15 @@ func (cmd *cmdRun) execute(args []string) error {
 func (cmd *cmdRun) parseArgs(args []string) error {
 	cmd.flagset.StringVar(&cmd.configFile, "configFile", configio.FindFile(), "Config file path")
 	cmd.flagset.BoolVar(&cmd.silent, "silent", false, "Silent mode")
-	configflag.Bind(cmd.flagset, &cmd.configRepr)
+	configflag.Bind(cmd.flagset, &cmd.builder)
 	return cmd.flagset.Parse(args)
 }
 
 func buildConfig(
+	b configio.Builder,
 	filePath string,
-	cliConfigRepr configio.Representation,
 ) (benchttp.Runner, error) {
-	// start with default runner as base
+	// use default runner as a base
 	runner := benchttp.DefaultRunner()
 
 	// override with config file values
@@ -75,9 +71,7 @@ func buildConfig(
 	}
 
 	// override with CLI flags values
-	if err := cliConfigRepr.Into(&runner); err != nil {
-		return runner, err
-	}
+	b.Mutate(&runner)
 
 	return runner, nil
 }
