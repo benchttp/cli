@@ -2,16 +2,16 @@
 
 <p align="center">
   <a href="https://github.com/benchttp/cli/actions/workflows/ci.yml?query=branch%3Amain">
-  <img alt="Github Worklow Status" src="https://img.shields.io/github/workflow/status/benchttp/cli/Lint%20&%20Test%20&%20Build"></a>
+  <img alt="Github Worklow Status" src="https://img.shields.io/github/actions/workflow/status/benchttp/cli/ci.yml?branch=main" /></a>
   <a href="https://codecov.io/gh/benchttp/cli">
-  <img alt="Code coverage" src="https://img.shields.io/codecov/c/gh/benchttp/cli?label=coverage"></a>
+  <img alt="Code coverage" src="https://img.shields.io/codecov/c/gh/benchttp/cli?label=coverage" /></a>
   <a href="https://goreportcard.com/report/github.com/benchttp/cli">
   <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/benchttp/cli" /></a>
   <br />
   <a href="https://pkg.go.dev/github.com/benchttp/cli#section-documentation">
     <img alt="Go package Reference" src="https://img.shields.io/badge/pkg-reference-informational?logo=go" /></a>
   <a href="https://github.com/benchttp/cli/releases">
-    <img alt="Latest version" src="https://img.shields.io/github/v/tag/benchttp/cli?label=release"></a>
+    <img alt="Latest version" src="https://img.shields.io/github/v/tag/benchttp/cli?label=release" /></a>
 </p>
 
 ## About
