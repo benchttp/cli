@@ -1,10 +1,11 @@
 package render_test
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/engine/benchttp"
 
 	"github.com/benchttp/cli/internal/render"
 	"github.com/benchttp/cli/internal/render/ansi"
@@ -13,12 +14,12 @@ import (
 func TestReport_String(t *testing.T) {
 	t.Run("returns metrics summary", func(t *testing.T) {
 		metrics, duration := metricsStub()
-		cfg := configStub()
+		runner := runnerStub()
 
-		rep := &runner.Report{
+		rep := &benchttp.Report{
 			Metrics: metrics,
-			Metadata: runner.ReportMetadata{
-				Config:        cfg,
+			Metadata: benchttp.Metadata{
+				Runner:        runner,
 				TotalDuration: duration,
 			},
 		}
@@ -28,13 +29,13 @@ func TestReport_String(t *testing.T) {
 
 // helpers
 
-func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
-	return runner.MetricsAggregate{
+func metricsStub() (agg benchttp.MetricsAggregate, total time.Duration) {
+	return benchttp.MetricsAggregate{
 		RequestFailures: make([]struct {
 			Reason string
 		}, 1),
 		Records: make([]struct{ ResponseTime time.Duration }, 3),
-		ResponseTimes: runner.MetricsTimeStats{
+		ResponseTimes: benchttp.MetricsTimeStats{
 			Min:  4 * time.Second,
 			Max:  6 * time.Second,
 			Mean: 5 * time.Second,
@@ -42,11 +43,11 @@ func metricsStub() (agg runner.MetricsAggregate, total time.Duration) {
 	}, 15 * time.Second
 }
 
-func configStub() runner.Config {
-	cfg := runner.Config{}
-	cfg.Request = cfg.Request.WithURL("https://a.b.com")
-	cfg.Runner.Requests = -1
-	return cfg
+func runnerStub() benchttp.Runner {
+	runner := benchttp.Runner{}
+	runner.Request = mustMakeRequest("https://a.b.com")
+	runner.Requests = -1
+	return runner
 }
 
 func checkSummary(t *testing.T, summary string) {
@@ -66,4 +67,12 @@ Total duration     15000ms
 	if summary != expSummary {
 		t.Errorf("\nexp summary:\n%q\ngot summary:\n%q", expSummary, summary)
 	}
+}
+
+func mustMakeRequest(uri string) *http.Request {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		panic(err)
+	}
+	return req
 }

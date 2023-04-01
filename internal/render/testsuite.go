@@ -4,17 +4,17 @@ import (
 	"io"
 	"strings"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/engine/benchttp"
 
 	"github.com/benchttp/cli/internal/render/ansi"
 )
 
-func TestSuite(w io.Writer, suite runner.TestSuiteResults) (int, error) {
+func TestSuite(w io.Writer, suite benchttp.TestSuiteResults) (int, error) {
 	return w.Write([]byte(TestSuiteString(suite)))
 }
 
 // String returns a default summary of the Report as a string.
-func TestSuiteString(suite runner.TestSuiteResults) string {
+func TestSuiteString(suite benchttp.TestSuiteResults) string {
 	if len(suite.Results) == 0 {
 		return ""
 	}

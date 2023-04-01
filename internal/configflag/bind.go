@@ -1,76 +1,139 @@
 package configflag
 
 import (
+	"bytes"
+	"errors"
 	"flag"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/engine/configio"
 )
 
-// Bind reads arguments provided to flagset as config.Fields and binds
-// their value to the appropriate fields of given *config.Global.
+// Bind reads arguments provided to flagset as config fields
+// and binds their value to the appropriate fields of dst.
 // The provided *flag.Flagset must not have been parsed yet, otherwise
 // bindings its values would fail.
-func Bind(flagset *flag.FlagSet, dst *runner.Config) {
-	// avoid nil pointer dereferences
-	if dst.Request.URL == nil {
-		dst.Request.URL = &url.URL{}
+func Bind(flagset *flag.FlagSet, dst *configio.Builder) {
+	for field, bind := range bindings {
+		flagset.Func(field, flagsUsage[field], bind(dst))
 	}
-	if dst.Request.Header == nil {
-		dst.Request.Header = http.Header{}
-	}
+}
 
-	// request url
-	flagset.Var(urlValue{url: dst.Request.URL},
-		runner.ConfigFieldURL,
-		runner.ConfigFieldsUsage[runner.ConfigFieldURL],
-	)
-	// request method
-	flagset.StringVar(&dst.Request.Method,
-		runner.ConfigFieldMethod,
-		dst.Request.Method,
-		runner.ConfigFieldsUsage[runner.ConfigFieldMethod],
-	)
-	// request header
-	flagset.Var(headerValue{header: &dst.Request.Header},
-		runner.ConfigFieldHeader,
-		runner.ConfigFieldsUsage[runner.ConfigFieldHeader],
-	)
-	// request body
-	flagset.Var(bodyValue{body: &dst.Request.Body},
-		runner.ConfigFieldBody,
-		runner.ConfigFieldsUsage[runner.ConfigFieldBody],
-	)
-	// requests number
-	flagset.IntVar(&dst.Runner.Requests,
-		runner.ConfigFieldRequests,
-		dst.Runner.Requests,
-		runner.ConfigFieldsUsage[runner.ConfigFieldRequests],
-	)
+type setter = func(string) error
 
-	// concurrency
-	flagset.IntVar(&dst.Runner.Concurrency,
-		runner.ConfigFieldConcurrency,
-		dst.Runner.Concurrency,
-		runner.ConfigFieldsUsage[runner.ConfigFieldConcurrency],
-	)
-	// non-conurrent requests interval
-	flagset.DurationVar(&dst.Runner.Interval,
-		runner.ConfigFieldInterval,
-		dst.Runner.Interval,
-		runner.ConfigFieldsUsage[runner.ConfigFieldInterval],
-	)
-	// request timeout
-	flagset.DurationVar(&dst.Runner.RequestTimeout,
-		runner.ConfigFieldRequestTimeout,
-		dst.Runner.RequestTimeout,
-		runner.ConfigFieldsUsage[runner.ConfigFieldRequestTimeout],
-	)
-	// global timeout
-	flagset.DurationVar(&dst.Runner.GlobalTimeout,
-		runner.ConfigFieldGlobalTimeout,
-		dst.Runner.GlobalTimeout,
-		runner.ConfigFieldsUsage[runner.ConfigFieldGlobalTimeout],
-	)
+var bindings = map[string]func(*configio.Builder) setter{
+	flagMethod: func(b *configio.Builder) setter {
+		return func(in string) error {
+			b.SetRequestMethod(in)
+			return nil
+		}
+	},
+	flagURL: func(b *configio.Builder) setter {
+		return func(in string) error {
+			u, err := url.ParseRequestURI(in)
+			if err != nil {
+				return err
+			}
+			b.SetRequestURL(u)
+			return nil
+		}
+	},
+	flagHeader: func(b *configio.Builder) setter {
+		return func(in string) error {
+			keyval := strings.SplitN(in, ":", 2)
+			if len(keyval) != 2 {
+				return errors.New(`-header: expect format "<key>:<value>"`)
+			}
+			key, val := keyval[0], keyval[1]
+			b.SetRequestHeaderFunc(func(h http.Header) http.Header {
+				if h == nil {
+					h = http.Header{}
+				}
+				h[key] = append(h[key], val)
+				return h
+			})
+			return nil
+		}
+	},
+	flagBody: func(b *configio.Builder) setter {
+		return func(in string) error {
+			errFormat := fmt.Errorf(`expect format "<type>:<content>", got %q`, in)
+			if in == "" {
+				return errFormat
+			}
+			split := strings.SplitN(in, ":", 2)
+			if len(split) != 2 {
+				return errFormat
+			}
+			btype, bcontent := split[0], split[1]
+			if bcontent == "" {
+				return errFormat
+			}
+			switch btype {
+			case "raw":
+				b.SetRequestBody(io.NopCloser(bytes.NewBufferString(bcontent)))
+			// case "file":
+			// 	// TODO
+			default:
+				return fmt.Errorf(`unsupported type: %s (only "raw" accepted)`, btype)
+			}
+			return nil
+		}
+	},
+	flagRequests: func(b *configio.Builder) setter {
+		return func(in string) error {
+			n, err := strconv.Atoi(in)
+			if err != nil {
+				return err
+			}
+			b.SetRequests(n)
+			return nil
+		}
+	},
+	flagConcurrency: func(b *configio.Builder) setter {
+		return func(in string) error {
+			n, err := strconv.Atoi(in)
+			if err != nil {
+				return err
+			}
+			b.SetConcurrency(n)
+			return nil
+		}
+	},
+	flagInterval: func(b *configio.Builder) setter {
+		return func(in string) error {
+			d, err := time.ParseDuration(in)
+			if err != nil {
+				return err
+			}
+			b.SetInterval(d)
+			return nil
+		}
+	},
+	flagRequestTimeout: func(b *configio.Builder) setter {
+		return func(in string) error {
+			d, err := time.ParseDuration(in)
+			if err != nil {
+				return err
+			}
+			b.SetRequestTimeout(d)
+			return nil
+		}
+	},
+	flagGlobalTimeout: func(b *configio.Builder) setter {
+		return func(in string) error {
+			d, err := time.ParseDuration(in)
+			if err != nil {
+				return err
+			}
+			b.SetGlobalTimeout(d)
+			return nil
+		}
+	},
 }

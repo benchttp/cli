@@ -1,39 +1,43 @@
 package configflag_test
 
 import (
+	"bytes"
 	"flag"
+	"io"
 	"net/http"
-	"reflect"
+	"net/url"
 	"testing"
 	"time"
 
-	"github.com/benchttp/engine/runner"
+	"github.com/benchttp/engine/benchttp"
+	"github.com/benchttp/engine/benchttptest"
+	"github.com/benchttp/engine/configio"
 
 	"github.com/benchttp/cli/internal/configflag"
 )
 
 func TestBind(t *testing.T) {
-	t.Run("default to base config", func(t *testing.T) {
-		flagset := flag.NewFlagSet("run", flag.ExitOnError)
+	t.Run("default to zero runner", func(t *testing.T) {
+		flagset := flag.NewFlagSet("", flag.ExitOnError)
 		args := []string{} // no args
 
-		cfg := runner.DefaultConfig()
-		configflag.Bind(flagset, &cfg)
+		b := configio.Builder{}
+		configflag.Bind(flagset, &b)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
 		}
 
-		if exp := runner.DefaultConfig(); !reflect.DeepEqual(cfg, exp) {
-			t.Errorf("\nexp %#v\ngot %#v", exp, cfg)
-		}
+		benchttptest.AssertEqualRunners(t, benchttp.Runner{}, b.Runner())
 	})
 
 	t.Run("set config with flags values", func(t *testing.T) {
-		flagset := flag.NewFlagSet("run", flag.ExitOnError)
+		flagset := flag.NewFlagSet("", flag.ExitOnError)
 		args := []string{
 			"-method", "POST",
-			"-url", "https://benchttp.app?cool=yes",
-			"-header", "Content-Type:application/json",
+			"-url", "https://example.com?a=b",
+			"-header", "API_KEY:abc",
+			"-header", "Accept:text/html",
+			"-header", "Accept:application/json",
 			"-body", "raw:hello",
 			"-requests", "1",
 			"-concurrency", "2",
@@ -42,29 +46,38 @@ func TestBind(t *testing.T) {
 			"-globalTimeout", "5s",
 		}
 
-		cfg := runner.Config{}
-		configflag.Bind(flagset, &cfg)
+		b := configio.Builder{}
+		configflag.Bind(flagset, &b)
 		if err := flagset.Parse(args); err != nil {
 			t.Fatal(err) // critical error, stop the test
 		}
 
-		exp := runner.Config{
-			Request: runner.RequestConfig{
-				Method: "POST",
-				Header: http.Header{"Content-Type": {"application/json"}},
-				Body:   runner.RequestBody{Type: "raw", Content: []byte("hello")},
-			}.WithURL("https://benchttp.app?cool=yes"),
-			Runner: runner.RecorderConfig{
+		benchttptest.AssertEqualRunners(t,
+			benchttp.Runner{
+				Request: &http.Request{
+					Method: "POST",
+					URL:    mustParseURL("https://example.com?a=b"),
+					Header: http.Header{
+						"API_KEY": []string{"abc"},
+						"Accept":  []string{"text/html", "application/json"},
+					},
+					Body: io.NopCloser(bytes.NewBufferString("hello")),
+				},
 				Requests:       1,
 				Concurrency:    2,
 				Interval:       3 * time.Second,
 				RequestTimeout: 4 * time.Second,
 				GlobalTimeout:  5 * time.Second,
 			},
-		}
-
-		if !reflect.DeepEqual(cfg, exp) {
-			t.Errorf("\nexp %#v\ngot %#v", exp, cfg)
-		}
+			b.Runner(),
+		)
 	})
+}
+
+func mustParseURL(v string) *url.URL {
+	u, err := url.ParseRequestURI(v)
+	if err != nil {
+		panic("mustParseURL: " + err.Error())
+	}
+	return u
 }
