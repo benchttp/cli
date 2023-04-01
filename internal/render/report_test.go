@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benchttp/sdk/benchttp"
+	"github.com/benchttp/engine/benchttp"
 
 	"github.com/benchttp/cli/internal/render"
 	"github.com/benchttp/cli/internal/render/ansi"

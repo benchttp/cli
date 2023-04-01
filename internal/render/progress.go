@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	benchttp "github.com/benchttp/sdk/benchttp"
+	"github.com/benchttp/engine/benchttp"
 
 	"github.com/benchttp/cli/internal/render/ansi"
 )

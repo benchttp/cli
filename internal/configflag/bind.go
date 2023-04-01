@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/benchttp/sdk/configio"
+	"github.com/benchttp/engine/configio"
 )
 
 // Bind reads arguments provided to flagset as config fields

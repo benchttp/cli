@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/benchttp/sdk/benchttp"
-	"github.com/benchttp/sdk/configio"
+	"github.com/benchttp/engine/benchttp"
+	"github.com/benchttp/engine/configio"
 
 	"github.com/benchttp/cli/internal/configflag"
 	"github.com/benchttp/cli/internal/output"
