@@ -1,3 +1,5 @@
+github.com/benchttp/engine v0.2.0 h1:r3zKs7ZOgRC0uDsHabD76sIoiF57MwGl0ouhFGpbu+A=
+github.com/benchttp/engine v0.2.0/go.mod h1:70imLQ2ONTEMGcbJimOirjz57uw3aix9RI8yZVZxLdc=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 h1:uVc8UZUe6tr40fFVnUP5Oj+veunVezqYl9z7DYw9xzw=

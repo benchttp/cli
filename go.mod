@@ -2,7 +2,7 @@ module github.com/benchttp/cli
 
 go 1.17
 
-require github.com/benchttp/engine v0.1.0
+require github.com/benchttp/engine v0.2.0
 
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
